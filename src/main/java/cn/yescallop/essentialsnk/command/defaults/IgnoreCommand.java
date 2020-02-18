@@ -5,7 +5,9 @@ import cn.nukkit.Player;
 import cn.nukkit.command.CommandSender;
 import cn.nukkit.command.data.CommandParamType;
 import cn.nukkit.command.data.CommandParameter;
+import cn.nukkit.utils.TextFormat;
 import cn.yescallop.essentialsnk.EssentialsAPI;
+import cn.yescallop.essentialsnk.Language;
 import cn.yescallop.essentialsnk.command.CommandBase;
 
 public class IgnoreCommand extends CommandBase {
@@ -43,6 +45,9 @@ public class IgnoreCommand extends CommandBase {
                 this.sendUsage(sender);
                 return false;
             }
+        }
+        if (toIgnore == player) {
+            sender.sendMessage(TextFormat.RED + Language.translate("commands.ignore.self"));
         }
 
         if (api.ignore(player.getUniqueId(), toIgnore.getUniqueId())) {

@@ -436,7 +436,7 @@ public class EssentialsAPI {
 
     public boolean setWarp(String name, Location pos) {
         boolean replaced = this.configs.exists(this.warpConfig, name);
-        Object[] home = new Object[]{pos.level.getFolderName(), pos.x, pos.y, pos.z, pos.yaw, pos.pitch};
+        List home = Arrays.asList(pos.level.getFolderName(), pos.x, pos.y, pos.z, pos.yaw, pos.pitch);
         this.configs.set(this.warpConfig, name, home);
         return replaced;
     }

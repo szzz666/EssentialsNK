@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Configs implements Closeable {
     private final Map<ConfigType, ConfigData> configs = new ConcurrentHashMap<>();
@@ -72,49 +73,43 @@ public class Configs implements Closeable {
         @Override
         public void run() {
             for (ConfigData data : Configs.this.configs.values()) {
-                if (!data.changed) {
-                    continue;
+                if (data.changed.compareAndSet(true, false)) {
+                    data.config.reload();
+                    for (String key : data.removed) {
+                        data.config.remove(key);
+                    }
+                    data.config.getRootSection().putAll(data.added);
+
+                    data.config.save();
                 }
-
-                data.config.reload();
-                for (String key : data.removed) {
-                    data.config.remove(key);
-                }
-                data.config.getRootSection().putAll(data.changeSet);
-
-                data.config.save();
-
-                data.changed = false;
             }
         }
     }
 
     private static class ConfigData {
         private final Config config;
-        private final ConfigSection changeSet;
-        private volatile boolean changed;
+        private final ConfigSection added;
+        private AtomicBoolean changed = new AtomicBoolean();
         private final Set<String> removed = new HashSet<>();
 
         private ConfigData(ConfigType configType) {
             this.config = new Config(configType.getFile(), configType.getType());
-            this.changeSet = new ConfigSection();
+            this.added = new ConfigSection();
         }
 
         public void set(String key, Object value) {
-            this.changeSet.set(key, value);
-            this.changed = true;
+            this.added.set(key, value);
             this.removed.remove(key);
+            this.changed.compareAndSet(false, true);
         }
 
         @SuppressWarnings("unchecked")
         private <T> T get(String key, T defaultValue) {
-            if (this.changed) {
-                if (this.changeSet.exists(key)) {
-                    return (T) this.changeSet.get(key);
-                }
-                if (this.removed.contains(key)) {
-                    return defaultValue;
-                }
+            if (this.added.exists(key)) {
+                return (T) this.added.get(key);
+            }
+            if (this.removed.contains(key)) {
+                return defaultValue;
             }
             Object object = this.config.get(key);
             if (object == null) {
@@ -124,20 +119,18 @@ public class Configs implements Closeable {
         }
 
         public boolean exists(String key) {
-            if (this.changed) {
-                if (this.changeSet.exists(key)) {
-                    return true;
-                } else if (this.removed.contains(key)) {
-                    return false;
-                }
+            if (this.added.exists(key)) {
+                return true;
+            } else if (this.removed.contains(key)) {
+                return false;
             }
             return this.config.exists(key);
         }
 
         public void remove(String key) {
             this.removed.add(key);
-            this.changeSet.remove(key);
-            this.changed = true;
+            this.added.remove(key);
+            this.changed.compareAndSet(false, true);
         }
 
         public Set<String> getKeys() {
