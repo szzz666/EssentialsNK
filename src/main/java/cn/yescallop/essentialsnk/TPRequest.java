@@ -3,32 +3,32 @@ package cn.yescallop.essentialsnk;
 import cn.nukkit.Player;
 import cn.nukkit.level.Location;
 
-public class TPRequest {
+public class TPRequest implements Comparable<TPRequest> {
 
-    private final long startTime;
-    private final Player from;
-    private final Player to;
+    private final long requestTime;
+    private final Player sender;
+    private final Player recipient;
     private final Location location;
-    private final boolean isTo;
+    private final boolean to;
 
-    public TPRequest(long startTime, Player from, Player to, Location location, boolean isTo) {
-        this.startTime = startTime;
-        this.from = from;
-        this.to = to;
+    public TPRequest(long requestTime, Player sender, Player recipient, Location location, boolean to) {
+        this.requestTime = requestTime;
+        this.sender = sender;
+        this.recipient = recipient;
         this.location = location;
-        this.isTo = isTo;
+        this.to = to;
     }
 
-    public long getStartTime() {
-        return startTime;
+    public long getRequestTime() {
+        return requestTime;
     }
 
-    public Player getFrom() {
-        return from;
+    public Player getSender() {
+        return sender;
     }
 
-    public Player getTo() {
-        return to;
+    public Player getRecipient() {
+        return recipient;
     }
 
     public Location getLocation() {
@@ -36,6 +36,11 @@ public class TPRequest {
     }
 
     public boolean isTo() {
-        return isTo;
+        return to;
+    }
+
+    @Override
+    public int compareTo(TPRequest that) {
+        return Long.compare(this.requestTime, that.requestTime);
     }
 }

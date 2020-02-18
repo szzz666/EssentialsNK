@@ -47,7 +47,7 @@ public class TPDenyCommand extends CommandBase {
                     sender.sendMessage(TextFormat.RED + Language.translate("commands.tpaccept.unavailable"));
                     return false;
                 }
-                from = request.getFrom();
+                from = request.getSender();
                 break;
             case 1:
                 from = api.getServer().getPlayer(args[0]);

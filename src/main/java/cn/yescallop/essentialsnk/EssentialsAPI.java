@@ -49,7 +49,7 @@ public class EssentialsAPI {
     private static Duration THIRTY_DAYS = Duration.ZERO.plusDays(30);
     private Vector3 temporalVector = new Vector3();
     private EssentialsNK plugin;
-    private final Map<CommandSender, Long> cooldown = new HashMap<>();
+    private final Map<CommandSender, Long> cooldown = new IdentityHashMap<>();
     private final List<TPCooldown> tpCooldowns = new ArrayList<>();
     private Map<Player, Location> playerLastLocation = new HashMap<>();
     private Map<Integer, TPRequest> tpRequests = new ConcurrentHashMap<>();
@@ -260,10 +260,20 @@ public class EssentialsAPI {
         this.tpRequests.put(getHashCode(from, to, isTo), new TPRequest(System.currentTimeMillis(), from, to, isTo ? to.getLocation() : from.getLocation(), isTo));
     }
 
+    public List<TPRequest> getTPRequestsTo(Player player) {
+        List<TPRequest> requests = new ArrayList<>();
+        for (TPRequest request : this.tpRequests.values()) {
+            if (request.getRecipient() == player) {
+                requests.add(request);
+            }
+        }
+        return requests;
+    }
+
     public TPRequest getLatestTPRequestTo(Player player) {
         TPRequest latest = null;
         for (TPRequest request : this.tpRequests.values()) {
-            if (request.getTo() == player && (latest == null || request.getStartTime() > latest.getStartTime())) {
+            if (request.getRecipient() == player && (latest == null || request.getRequestTime() > latest.getRequestTime())) {
                 latest = request;
             }
         }
@@ -289,7 +299,7 @@ public class EssentialsAPI {
     }
 
     public void removeTPRequest(Player player) {
-        this.tpRequests.values().removeIf(request -> request.getFrom() == player || request.getTo() == player);
+        this.tpRequests.values().removeIf(request -> request.getSender() == player || request.getRecipient() == player);
     }
 
     public boolean ignore(UUID player, UUID toIgnore) {
@@ -426,7 +436,7 @@ public class EssentialsAPI {
 
     public boolean setWarp(String name, Location pos) {
         boolean replaced = this.configs.exists(this.warpConfig, name);
-        Object[] home = new Object[]{pos.level.getName(), pos.x, pos.y, pos.z, pos.yaw, pos.pitch};
+        Object[] home = new Object[]{pos.level.getFolderName(), pos.x, pos.y, pos.z, pos.yaw, pos.pitch};
         this.configs.set(this.warpConfig, name, home);
         return replaced;
     }
@@ -633,8 +643,8 @@ public class EssentialsAPI {
             while (requestIterator.hasNext()) {
                 TPRequest request = requestIterator.next();
 
-                long expirationTime = request.getStartTime() + TP_EXPIRATION;
-                if (currentTime >= expirationTime) {
+                long expirationTime = request.getRequestTime() + TP_EXPIRATION;
+                if (expirationTime <= currentTime) {
                     requestIterator.remove();
                 }
             }
