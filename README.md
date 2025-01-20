@@ -1,6 +1,6 @@
 # EssentialsNK
-Essentials plugin for Nukkit
+Nukkit 的 Essentials 插件
 
-Contributions are welcome!
+优化性能
 
-__[Download Page](https://nukkitx.com/resources/essentialsnk.15/)__
+
