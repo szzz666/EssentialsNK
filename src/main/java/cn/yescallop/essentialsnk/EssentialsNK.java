@@ -1,5 +1,7 @@
 package cn.yescallop.essentialsnk;
 
+import cn.nukkit.Server;
+import cn.nukkit.plugin.Plugin;
 import cn.nukkit.plugin.PluginBase;
 import cn.yescallop.essentialsnk.command.CommandManager;
 import cn.yescallop.essentialsnk.task.TeleportationTask;
@@ -7,7 +9,13 @@ import cn.yescallop.essentialsnk.task.TeleportationTask;
 public class EssentialsNK extends PluginBase {
 
     private EssentialsAPI api;
-
+    public static Plugin plugin;
+    public static Server nkServer;
+    @Override
+    public void onLoad() {
+        nkServer = getServer();
+        plugin = this;
+    }
     @Override
     public void onEnable() {
         this.getDataFolder().mkdirs();

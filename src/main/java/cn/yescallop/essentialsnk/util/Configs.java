@@ -13,6 +13,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static cn.yescallop.essentialsnk.util.taskUtil.Async;
+
 public class Configs implements Closeable {
     private final Map<ConfigType, ConfigData> configs = new ConcurrentHashMap<>();
     private final TaskHandler reloadTaskHandler;
@@ -29,7 +31,7 @@ public class Configs implements Closeable {
     }
 
     public void reload() {
-        reloadTaskHandler.run(reloadTaskHandler.getLastRunTick());
+        Async(() -> reloadTaskHandler.run(reloadTaskHandler.getLastRunTick()));
     }
 
     public void set(ConfigType configType, String key, Object value) {
@@ -68,29 +70,11 @@ public class Configs implements Closeable {
         this.reloadTaskHandler.cancel();
     }
 
-    private class ConfigChangeTask implements Runnable {
-
-        @Override
-        public void run() {
-            for (ConfigData data : Configs.this.configs.values()) {
-                if (data.changed.compareAndSet(true, false)) {
-                    data.config.reload();
-                    for (String key : data.removed) {
-                        data.config.remove(key);
-                    }
-                    data.config.getRootSection().putAll(data.added);
-
-                    data.config.save();
-                }
-            }
-        }
-    }
-
     private static class ConfigData {
         private final Config config;
         private final ConfigSection added;
-        private AtomicBoolean changed = new AtomicBoolean();
         private final Set<String> removed = new HashSet<>();
+        private AtomicBoolean changed = new AtomicBoolean();
 
         private ConfigData(ConfigType configType) {
             this.config = new Config(configType.getFile(), configType.getType());
@@ -138,6 +122,26 @@ public class Configs implements Closeable {
             keys.removeAll(this.removed);
 
             return keys;
+        }
+    }
+
+    private class ConfigChangeTask implements Runnable {
+
+        @Override
+        public void run() {
+            Async(() -> {
+                for (ConfigData data : Configs.this.configs.values()) {
+                    if (data.changed.compareAndSet(true, false)) {
+                        data.config.reload();
+                        for (String key : data.removed) {
+                            data.config.remove(key);
+                        }
+                        data.config.getRootSection().putAll(data.added);
+
+                        data.config.save();
+                    }
+                }
+            });
         }
     }
 }

@@ -10,6 +10,8 @@ import cn.yescallop.essentialsnk.EssentialsAPI;
 import cn.yescallop.essentialsnk.Language;
 import cn.yescallop.essentialsnk.command.CommandBase;
 
+import static cn.yescallop.essentialsnk.util.taskUtil.Async;
+
 public class HomeCommand extends CommandBase {
 
     public HomeCommand(EssentialsAPI api) {
@@ -18,39 +20,41 @@ public class HomeCommand extends CommandBase {
 
         // command parameters
         commandParameters.clear();
-        this.commandParameters.put("default", new CommandParameter[] {
+        this.commandParameters.put("default", new CommandParameter[]{
                 new CommandParameter("home", CommandParamType.TEXT, true)
         });
     }
 
     public boolean execute(CommandSender sender, String label, String[] args) {
-        if (!this.testPermission(sender)) {
-            return false;
-        }
-        if (!this.testIngame(sender)) {
-            return false;
-        }
-        if (args.length > 1) {
-            this.sendUsage(sender);
-            return false;
-        }
-        Player player = (Player) sender;
-        if (args.length == 0) {
-            String[] list = api.getHomesList(player);
-            if (list.length == 0) {
-                sender.sendMessage(TextFormat.RED + Language.translate("commands.home.nohome"));
-                return false;
+        Async(() -> {
+            if (!this.testPermission(sender)) {
+                return;
             }
-            sender.sendMessage(Language.translate("commands.home.list") + "\n" + String.join(", ", list));
-            return true;
-        }
-        Location home = api.getHome(player, args[0].toLowerCase());
-        if (home == null) {
-            sender.sendMessage(TextFormat.RED + Language.translate("commands.home.notexists", args[0]));
-            return false;
-        }
-        player.teleport(home);
-        sender.sendMessage(Language.translate("commands.home.success", args[0]));
+            if (!this.testIngame(sender)) {
+                return;
+            }
+            if (args.length > 1) {
+                this.sendUsage(sender);
+                return;
+            }
+            Player player = (Player) sender;
+            if (args.length == 0) {
+                String[] list = api.getHomesList(player);
+                if (list.length == 0) {
+                    sender.sendMessage(TextFormat.RED + Language.translate("commands.home.nohome"));
+                    return;
+                }
+                sender.sendMessage(Language.translate("commands.home.list") + "\n" + String.join(", ", list));
+                return;
+            }
+            Location home = api.getHome(player, args[0].toLowerCase());
+            if (home == null) {
+                sender.sendMessage(TextFormat.RED + Language.translate("commands.home.notexists", args[0]));
+                return;
+            }
+            player.teleport(home);
+            sender.sendMessage(Language.translate("commands.home.success", args[0]));
+        });
         return true;
     }
 }
